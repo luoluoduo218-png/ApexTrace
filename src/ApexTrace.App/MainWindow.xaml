@@ -1,0 +1,91 @@
+<Window x:Class="ApexTrace.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ApexTrace.App"
+        xmlns:pages="clr-namespace:ApexTrace.App.Pages"
+        mc:Ignorable="d" Title="ApexTrace" Width="1672" Height="941" MinWidth="1280" MinHeight="720"
+        WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource BackgroundBrush}">
+    <Window.Resources>
+        <DataTemplate x:Key="HomeTemplate"><pages:HomePage /></DataTemplate>
+        <DataTemplate x:Key="RealtimeTemplate"><pages:RealtimePage /></DataTemplate>
+        <DataTemplate x:Key="MultiLapTemplate"><pages:MultiLapPage /></DataTemplate>
+        <DataTemplate x:Key="ReplayTemplate"><pages:ReplayPage /></DataTemplate>
+        <DataTemplate x:Key="CompareTemplate"><pages:ComparePage /></DataTemplate>
+        <DataTemplate x:Key="CornersTemplate"><pages:CornersPage /></DataTemplate>
+        <DataTemplate x:Key="SetupTemplate"><pages:SetupPage /></DataTemplate>
+        <DataTemplate x:Key="LibraryTemplate"><pages:LibraryPage /></DataTemplate>
+        <DataTemplate x:Key="SettingsTemplate"><pages:SettingsPage /></DataTemplate>
+    </Window.Resources>
+    <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="216" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <Grid.RowDefinitions><RowDefinition Height="94" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+
+            <Border Grid.RowSpan="2" Background="#06101A" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="102" /><RowDefinition Height="*" /><RowDefinition Height="70" /></Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="16,22,10,16">
+                        <TextBlock Text="A" FontSize="48" FontWeight="Bold" Foreground="{StaticResource BlueHighlightBrush}" />
+                        <StackPanel Margin="8,4,0,0"><TextBlock Text="ApexTrace" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="for Le Mans Ultimate" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" /></StackPanel>
+                    </StackPanel>
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Navigation}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource NavButtonStyle}" Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding Page}">
+                                    <StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Glyph}" Width="30" FontSize="21" Foreground="{StaticResource TextSecondaryBrush}" /><TextBlock Text="{Binding Title}" VerticalAlignment="Center" /></StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Grid Grid.Row="2" Margin="18"><TextBlock Text="v0.1.0 · FIRST RUNNABLE" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" /></Grid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Background="#07121E" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
+                <Grid Margin="24,0,10,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.35*" /><ColumnDefinition Width="1.25*" /><ColumnDefinition Width="0.8*" />
+                        <ColumnDefinition Width="0.65*" /><ColumnDefinition Width="1*" /><ColumnDefinition Width="1.2*" />
+                        <ColumnDefinition Width="160" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center"><TextBlock Text="赛道" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding TrackName}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /></StackPanel>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="车辆" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding VehicleName}" FontSize="15" TextTrimming="CharacterEllipsis" /></StackPanel>
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center"><TextBlock Text="会话" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding SessionType}" Foreground="{StaticResource BlueHighlightBrush}" FontSize="16" /></StackPanel>
+                    <StackPanel Grid.Column="3" VerticalAlignment="Center"><TextBlock Text="当前圈" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding CurrentLapText}" FontSize="16" /></StackPanel>
+                    <StackPanel Grid.Column="4" VerticalAlignment="Center"><TextBlock Text="天气" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding AmbientText}" FontSize="16" /></StackPanel>
+                    <StackPanel Grid.Column="5" VerticalAlignment="Center"><TextBlock Text="连接状态" Style="{StaticResource LabelStyle}" /><StackPanel Orientation="Horizontal"><Ellipse Width="9" Height="9" Fill="{StaticResource SuccessGreenBrush}" Margin="0,5,8,0" VerticalAlignment="Top" /><TextBlock Text="{Binding ConnectionText}" FontSize="14" TextTrimming="CharacterEllipsis" /></StackPanel></StackPanel>
+                    <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <Button Content="—" Width="44" Height="34" Background="Transparent" BorderThickness="0" Foreground="White" Click="Minimize_OnClick" />
+                        <Button Content="□" Width="44" Height="34" Background="Transparent" BorderThickness="0" Foreground="White" Click="Maximize_OnClick" />
+                        <Button Content="×" Width="44" Height="34" Background="Transparent" BorderThickness="0" Foreground="White" Click="Close_OnClick" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1" Grid.Column="1">
+                <ContentControl Content="{Binding}" Margin="20">
+                    <ContentControl.Style>
+                        <Style TargetType="ContentControl">
+                            <Setter Property="ContentTemplate" Value="{StaticResource HomeTemplate}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Realtime}"><Setter Property="ContentTemplate" Value="{StaticResource RealtimeTemplate}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.MultiLap}"><Setter Property="ContentTemplate" Value="{StaticResource MultiLapTemplate}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Replay}"><Setter Property="ContentTemplate" Value="{StaticResource ReplayTemplate}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Compare}"><Setter Property="ContentTemplate" Value="{StaticResource CompareTemplate}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Corners}"><Setter Property="ContentTemplate" Value="{StaticResource CornersTemplate}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Setup}"><Setter Property="ContentTemplate" Value="{StaticResource SetupTemplate}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Library}"><Setter Property="ContentTemplate" Value="{StaticResource LibraryTemplate}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Settings}"><Setter Property="ContentTemplate" Value="{StaticResource SettingsTemplate}" /></DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ContentControl.Style>
+                </ContentControl>
+                <Grid Background="#CC02070D" Visibility="{Binding IsEndModalVisible, Converter={StaticResource BoolToVisibility}}" Panel.ZIndex="20">
+                    <pages:EndSessionModal HorizontalAlignment="Center" VerticalAlignment="Center" Width="1020" />
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

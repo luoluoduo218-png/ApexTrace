@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ApexTrace.Core\ApexTrace.Core.csproj" />
+    <ProjectReference Include="..\ApexTrace.Lmu\ApexTrace.Lmu.csproj" />
+    <ProjectReference Include="..\ApexTrace.Recording\ApexTrace.Recording.csproj" />
+    <ProjectReference Include="..\ApexTrace.Track\ApexTrace.Track.csproj" />
+    <ProjectReference Include="..\ApexTrace.Analysis\ApexTrace.Analysis.csproj" />
+    <ProjectReference Include="..\ApexTrace.Setup\ApexTrace.Setup.csproj" />
+    <ProjectReference Include="..\ApexTrace.Storage\ApexTrace.Storage.csproj" />
+    <ProjectReference Include="..\ApexTrace.Rendering\ApexTrace.Rendering.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageReference Include="ScottPlot.WPF" Version="5.1.59" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>

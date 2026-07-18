@@ -1,0 +1,12 @@
+.dotnet/
+.tools/
+.vs/
+**/bin/
+**/obj/
+TestResults/
+artifacts/
+screenshots/
+*.user
+*.suo
+ApexTrace_Codex_Development_Package.zip
+ApexTrace_Codex_Development_Package/

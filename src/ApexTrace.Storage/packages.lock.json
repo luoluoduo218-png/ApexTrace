@@ -56,6 +56,25 @@
       },
       "apextrace.core": {
         "type": "Project"
+      },
+      "apextrace.recording": {
+        "type": "Project",
+        "dependencies": {
+          "ApexTrace.Core": "[0.1.0, )"
+        }
+      },
+      "apextrace.track": {
+        "type": "Project",
+        "dependencies": {
+          "ApexTrace.Core": "[0.1.0, )"
+        }
+      }
+    },
+    "net10.0/win-x64": {
+      "DuckDB.NET.Bindings.Full": {
+        "type": "Transitive",
+        "resolved": "1.5.3",
+        "contentHash": "3vkxzLkCmPUTRtEBBYrXvl9jOTXJ42uYswsokpysTulOS963ZIcMJRKpcHH2zwa63YI4YchjYvPz0pcR2Helbg=="
       }
     }
   }

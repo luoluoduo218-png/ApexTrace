@@ -88,7 +88,8 @@ public sealed record EnvironmentSample(
     double RainFraction,
     double PathWetnessFraction,
     Vector3D WindMetersPerSecond,
-    byte TrackGripLevel);
+    byte TrackGripLevel,
+    double CloudDarknessFraction = -1);
 
 public sealed record SampleQuality(
     bool IsConsistentSnapshot,
@@ -98,7 +99,8 @@ public sealed record SampleQuality(
     long SourceSequence,
     uint TelemetryEventCounter,
     uint ScoringEventCounter,
-    string? Diagnostic = null);
+    string? Diagnostic = null,
+    bool IsLapValid = true);
 
 public sealed record TelemetrySample(
     int SchemaVersion,
@@ -125,7 +127,13 @@ public sealed record TelemetrySample(
     VehicleControlSettings Controls,
     WheelSample[] Wheels,
     EnvironmentSample Environment,
-    SampleQuality Quality);
+    SampleQuality Quality,
+    int CurrentSector = -1,
+    string FrontTireCompound = "",
+    string RearTireCompound = "",
+    double SteeringWheelRangeDegrees = 1080,
+    double ErsBatteryFraction = -1,
+    byte ElectricMotorState = 0);
 
 public sealed record SessionMetadata(
     int SchemaVersion,
@@ -143,7 +151,8 @@ public sealed record SessionMetadata(
     string? SharedMemoryHeaderSha256,
     bool IsComplete,
     string CompletenessDiagnostic,
-    string? SetupJson);
+    string? SetupJson,
+    string WeatherConditions = "");
 
 public sealed record LapRecord(
     int SchemaVersion,
@@ -156,6 +165,13 @@ public sealed record LapRecord(
     int SampleCount);
 
 public sealed record TrackPoint(double DistanceMeters, double X, double Y, double ElevationMeters = 0);
+
+public sealed record LapTrace(
+    int LapNumber,
+    bool IsValid,
+    bool IsComplete,
+    bool IsBest,
+    IReadOnlyList<TrackPoint> Points);
 
 public sealed record TrackDefinition(
     int SchemaVersion,
@@ -223,7 +239,7 @@ public sealed record TelemetrySession(
 {
     public double DurationSeconds => Samples.Count == 0
         ? 0
-        : Samples[^1].SessionElapsedSeconds - Samples[0].SessionElapsedSeconds;
+        : Math.Max(0, (Samples[^1].CapturedAtUtc - Samples[0].CapturedAtUtc).TotalSeconds);
 }
 
 public sealed record LmuConnectionStatus(

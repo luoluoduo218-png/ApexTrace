@@ -20,6 +20,11 @@ public sealed class RealLmuDataTests
         Assert.InRange(session.DurationSeconds, 45.67, 45.71);
         Assert.True(session.Samples.Max(sample => sample.LapDistanceMeters) > 1400);
         Assert.All(session.Samples, sample => { Assert.InRange(sample.Throttle, 0, 1); Assert.InRange(sample.Brake, 0, 1); });
+        Assert.Contains("中性", session.Samples[0].FrontTireCompound);
+        Assert.Contains("中性", session.Samples[0].RearTireCompound);
+        Assert.Equal("微云", session.Metadata.WeatherConditions);
+        Assert.Equal(-1, session.Samples[0].Environment.RainFraction);
+        Assert.Equal(0, session.Samples[0].ElectricMotorState);
         Assert.All(session.Laps, lap => Assert.False(lap.IsComplete));
         Assert.False(session.Metadata.IsComplete);
     }

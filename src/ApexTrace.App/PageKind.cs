@@ -7,7 +7,6 @@ public enum PageKind
     MultiLap,
     Replay,
     Compare,
-    Corners,
     Setup,
     Library,
     Settings

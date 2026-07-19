@@ -22,12 +22,22 @@ public static class LmuHeaderLayoutV1
     public const int TelemVect3Size = 24;
     public const int TelemWheelSize = 260;
     public const int TelemInfoSize = 1888;
+    public const int TelemVehicleModelOffset = 796;
+    public const int TelemWheelArrayOffset = 848;
+    public const int TelemCurrentSectorOffset = 600;
+    public const int TelemFrontTireCompoundNameOffset = 620;
+    public const int TelemRearTireCompoundNameOffset = 638;
+    public const int TelemTireCompoundNameLength = 18;
+    public const int TelemPhysicalSteeringWheelRangeOffset = 692;
+    public const int TelemBatteryChargeFractionOffset = 704;
+    public const int TelemElectricBoostMotorStateOffset = 744;
+    public const int ScoringDarkCloudOffset = 212;
     public const int VehicleScoringInfoSize = 584;
-    public const int ScoringInfoSize = 548;
+    public const int ScoringInfoSize = 552;
     public const int ApplicationStateSize = 260;
-    public const int GenericSize = 336;
+    public const int GenericSize = 332;
     public const int PathDataSize = 1300;
-    public const int ScoringDataSize = 126828;
+    public const int ScoringDataSize = 126832;
     public const int TelemetryDataSize = 196356;
     public const int RootSize = 324820;
 

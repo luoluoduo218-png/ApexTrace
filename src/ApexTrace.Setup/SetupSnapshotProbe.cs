@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using ApexTrace.Core;
 
 namespace ApexTrace.Setup;
 
@@ -8,6 +9,30 @@ public sealed record SetupSnapshot(int SchemaVersion, string Source, string Sour
 
 public static class SetupSnapshotProbe
 {
+    public static SetupSnapshot FromSession(TelemetrySession session)
+    {
+        var metadata = FromLmuMetadataJson(session.Metadata.SetupJson);
+        if (metadata.Values.Count > 0) return metadata;
+        var sample = session.Samples.LastOrDefault(candidate => candidate.Controls is { } controls
+            && (controls.Abs > 0 || controls.TractionControl > 0 || controls.TractionControlSlip > 0
+                || controls.TractionControlCut > 0 || controls.FrontAntiRollBar > 0 || controls.RearAntiRollBar > 0))
+            ?? session.Samples.LastOrDefault();
+        if (sample is null) return metadata;
+        var controls = sample.Controls;
+        return new SetupSnapshot(1, "LMU_Data telemetry controls (read-only)", string.Empty,
+        [
+            Value("ABS", controls.Abs),
+            Value("Traction control", controls.TractionControl),
+            Value("TC slip", controls.TractionControlSlip),
+            Value("TC cut", controls.TractionControlCut),
+            Value("Motor map", controls.MotorMap),
+            Value("Migration", controls.Migration),
+            Value("Front anti-roll bar", controls.FrontAntiRollBar),
+            Value("Rear anti-roll bar", controls.RearAntiRollBar),
+            new SetupValue("Brake bias (rear)", $"{sample.BrakeBiasRear:P1}", sample.BrakeBiasRear, true)
+        ], "共享内存不提供完整车库调教文件；这里显示遥测确认的车载控制值。建议只做单变量 A/B 测试，ApexTrace 不写回游戏。");
+    }
+
     public static SetupSnapshot FromLmuMetadataJson(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -45,4 +70,6 @@ public static class SetupSnapshotProbe
         return new SetupSnapshot(1, Path.GetFullPath(path), hash, [],
             "SVM 文件仅完成哈希与存在性探测；未知字段未解释，原文件未修改。" );
     }
+
+    private static SetupValue Value(string key, byte value) => new(key, value.ToString(), value, true);
 }

@@ -13,9 +13,17 @@ public sealed class OfficialLayoutTests
     {
         Assert.Equal(3, Marshal.SizeOf<LmuHeaderLayoutV1.PackedBoolContract>());
         Assert.Equal(324820, LmuHeaderLayoutV1.RootSize);
-        Assert.Equal(1636, LmuHeaderLayoutV1.ScoringOffset);
+        Assert.Equal(1632, LmuHeaderLayoutV1.ScoringOffset);
+        Assert.Equal(552, LmuHeaderLayoutV1.ScoringInfoSize);
         Assert.Equal(128464, LmuHeaderLayoutV1.TelemetryOffset);
         Assert.Equal(128468, LmuHeaderLayoutV1.TelemInfoArrayOffset);
+        Assert.Equal(2192, LmuHeaderLayoutV1.VehicleScoringArrayOffset);
+        Assert.Equal(796, LmuHeaderLayoutV1.TelemVehicleModelOffset);
+        Assert.Equal(848, LmuHeaderLayoutV1.TelemWheelArrayOffset);
+        Assert.Equal(692, LmuHeaderLayoutV1.TelemPhysicalSteeringWheelRangeOffset);
+        Assert.Equal(704, LmuHeaderLayoutV1.TelemBatteryChargeFractionOffset);
+        Assert.Equal(744, LmuHeaderLayoutV1.TelemElectricBoostMotorStateOffset);
+        Assert.Equal(212, LmuHeaderLayoutV1.ScoringDarkCloudOffset);
     }
 
     [Theory]

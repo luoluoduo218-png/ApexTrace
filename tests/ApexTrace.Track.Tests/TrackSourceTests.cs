@@ -26,6 +26,26 @@ public sealed class TrackSourceTests
         Assert.Null(track.AccuracyEstimateMeters);
     }
 
+    [Fact]
+    public void Reconstruction_SelectsOneContinuousLapInsteadOfStitchingLaps()
+    {
+        var partial = Enumerable.Range(0, 20).Select(index => Sample(index * 2, index) with
+        {
+            LapNumber = 1,
+            WorldPosition = new(index * 2, 0, index * 2)
+        });
+        var complete = Enumerable.Range(0, 60).Select(index => Sample(index * 2, 100 + index) with
+        {
+            LapNumber = 2,
+            WorldPosition = new(1000 + index * 2, 0, 1000 + index * 2)
+        });
+
+        var track = GpsTrackReconstructor.FromSamples("Test", partial.Concat(complete).ToArray(), true);
+
+        Assert.NotEmpty(track.CenterLine);
+        Assert.All(track.CenterLine, point => Assert.True(point.X >= 1000));
+    }
+
     private static TelemetrySample Sample(double distance, long sequence) => new(
         1, sequence, DateTimeOffset.UtcNow, sequence, 1, distance, new(distance, 0, distance), Orientation3D.Identity,
         default, default, 0, 1, 0, 0, 0, 0, 0, 0, 0, false, false,

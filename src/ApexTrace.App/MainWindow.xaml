@@ -6,21 +6,20 @@
         xmlns:local="clr-namespace:ApexTrace.App"
         xmlns:pages="clr-namespace:ApexTrace.App.Pages"
         mc:Ignorable="d" Title="ApexTrace" Width="1672" Height="941" MinWidth="1280" MinHeight="720"
-        WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource BackgroundBrush}">
+        WindowStyle="None" ResizeMode="CanResize" ShowActivated="False" WindowStartupLocation="Manual" Background="{StaticResource BackgroundBrush}">
     <Window.Resources>
         <DataTemplate x:Key="HomeTemplate"><pages:HomePage /></DataTemplate>
         <DataTemplate x:Key="RealtimeTemplate"><pages:RealtimePage /></DataTemplate>
         <DataTemplate x:Key="MultiLapTemplate"><pages:MultiLapPage /></DataTemplate>
         <DataTemplate x:Key="ReplayTemplate"><pages:ReplayPage /></DataTemplate>
         <DataTemplate x:Key="CompareTemplate"><pages:ComparePage /></DataTemplate>
-        <DataTemplate x:Key="CornersTemplate"><pages:CornersPage /></DataTemplate>
         <DataTemplate x:Key="SetupTemplate"><pages:SetupPage /></DataTemplate>
         <DataTemplate x:Key="LibraryTemplate"><pages:LibraryPage /></DataTemplate>
         <DataTemplate x:Key="SettingsTemplate"><pages:SettingsPage /></DataTemplate>
     </Window.Resources>
     <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
         <Grid>
-            <Grid.ColumnDefinitions><ColumnDefinition Width="216" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="248" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
             <Grid.RowDefinitions><RowDefinition Height="94" /><RowDefinition Height="*" /></Grid.RowDefinitions>
 
             <Border Grid.RowSpan="2" Background="#06101A" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
@@ -30,15 +29,15 @@
                         <TextBlock Text="A" FontSize="48" FontWeight="Bold" Foreground="{StaticResource BlueHighlightBrush}" />
                         <StackPanel Margin="8,4,0,0"><TextBlock Text="ApexTrace" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="for Le Mans Ultimate" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" /></StackPanel>
                     </StackPanel>
-                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Navigation}">
-                        <ItemsControl.ItemTemplate>
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Navigation}" SelectedValuePath="Page" SelectedValue="{Binding CurrentPage, Mode=TwoWay}"
+                             Style="{StaticResource SidebarNavListBoxStyle}" ItemContainerStyle="{StaticResource SidebarNavItemStyle}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Button Style="{StaticResource NavButtonStyle}" Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding Page}">
-                                    <StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Glyph}" Width="30" FontSize="21" Foreground="{StaticResource TextSecondaryBrush}" /><TextBlock Text="{Binding Title}" VerticalAlignment="Center" /></StackPanel>
-                                </Button>
+                                <StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Glyph}" Width="34" FontSize="21" Style="{StaticResource SidebarNavTextStyle}" /><TextBlock Text="{Binding Title}" VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Style="{StaticResource SidebarNavTextStyle}" /></StackPanel>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                     <Grid Grid.Row="2" Margin="18"><TextBlock Text="v0.1.0 · FIRST RUNNABLE" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" /></Grid>
                 </Grid>
             </Border>
@@ -54,7 +53,16 @@
                     <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="车辆" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding VehicleName}" FontSize="15" TextTrimming="CharacterEllipsis" /></StackPanel>
                     <StackPanel Grid.Column="2" VerticalAlignment="Center"><TextBlock Text="会话" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding SessionType}" Foreground="{StaticResource BlueHighlightBrush}" FontSize="16" /></StackPanel>
                     <StackPanel Grid.Column="3" VerticalAlignment="Center"><TextBlock Text="当前圈" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding CurrentLapText}" FontSize="16" /></StackPanel>
-                    <StackPanel Grid.Column="4" VerticalAlignment="Center"><TextBlock Text="天气" Style="{StaticResource LabelStyle}" /><TextBlock Text="{Binding AmbientText}" FontSize="16" /></StackPanel>
+                    <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                        <TextBlock Text="天气" Style="{StaticResource LabelStyle}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                            <TextBlock Text="{Binding WeatherIconText}" FontFamily="Segoe UI Emoji" FontSize="17" MinWidth="25" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding CurrentWeatherText}" FontSize="13" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding WeatherDetailText}" FontSize="9" Foreground="{StaticResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
                     <StackPanel Grid.Column="5" VerticalAlignment="Center"><TextBlock Text="连接状态" Style="{StaticResource LabelStyle}" /><StackPanel Orientation="Horizontal"><Ellipse Width="9" Height="9" Fill="{StaticResource SuccessGreenBrush}" Margin="0,5,8,0" VerticalAlignment="Top" /><TextBlock Text="{Binding ConnectionText}" FontSize="14" TextTrimming="CharacterEllipsis" /></StackPanel></StackPanel>
                     <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
                         <Button Content="—" Width="44" Height="34" Background="Transparent" BorderThickness="0" Foreground="White" Click="Minimize_OnClick" />
@@ -74,7 +82,6 @@
                                 <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.MultiLap}"><Setter Property="ContentTemplate" Value="{StaticResource MultiLapTemplate}" /></DataTrigger>
                                 <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Replay}"><Setter Property="ContentTemplate" Value="{StaticResource ReplayTemplate}" /></DataTrigger>
                                 <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Compare}"><Setter Property="ContentTemplate" Value="{StaticResource CompareTemplate}" /></DataTrigger>
-                                <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Corners}"><Setter Property="ContentTemplate" Value="{StaticResource CornersTemplate}" /></DataTrigger>
                                 <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Setup}"><Setter Property="ContentTemplate" Value="{StaticResource SetupTemplate}" /></DataTrigger>
                                 <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Library}"><Setter Property="ContentTemplate" Value="{StaticResource LibraryTemplate}" /></DataTrigger>
                                 <DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static local:PageKind.Settings}"><Setter Property="ContentTemplate" Value="{StaticResource SettingsTemplate}" /></DataTrigger>

@@ -22,6 +22,29 @@ public sealed class EvidenceTests
         Assert.Contains(events, e => e.Type == DrivingEventType.TcActivation);
     }
 
+    [Fact]
+    public void ThreeValidCompleteLaps_ProduceEvidenceBasedLapPrediction()
+    {
+        var sample = Sample(0, 4, 0, .5, false);
+        var metadata = new SessionMetadata(1, Guid.NewGuid(), "Silverstone", "Silverstone", "Ferrari 296 LMGT3", "GT3", "Q",
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, TelemetryDataSource.LmuSharedMemory, "LMU_Data", null, null, true, "complete", null);
+        var laps = new[]
+        {
+            new LapRecord(1, 1, 0, 125.5, 125.5, true, true, 6276),
+            new LapRecord(1, 2, 125.5, 250.7, 125.2, true, true, 6261),
+            new LapRecord(1, 3, 250.7, 376.1, 125.4, true, true, 6271)
+        };
+        var session = new TelemetrySession(1, metadata, [sample], laps,
+            new(1, "Silverstone", "runtime", TrackGeometrySource.RuntimeReconstruction, .5, "", [], "complete"), [], []);
+
+        var prediction = Assert.Single(new EvidenceRecommendationEngine().Analyze(session), item => item.Type == "Prediction");
+
+        Assert.Equal("Prediction", prediction.Type);
+        Assert.Equal(125.4, prediction.SuggestedValue);
+        Assert.True(prediction.Confidence >= .55);
+        Assert.NotEmpty(prediction.Evidence);
+    }
+
     private static TelemetrySample Sample(double time, int lap, double brake, double throttle, bool tc) => new(
         1,(long)(time*100),DateTimeOffset.UtcNow,time,lap,time*10,new(time,0,0),Orientation3D.Identity,default,default,0,1,1000,throttle,brake,0,0,20,.5,false,tc,
         new(0,0,0,0,0,0,0,0),[WheelSample.Empty,WheelSample.Empty,WheelSample.Empty,WheelSample.Empty],new(20,30,0,0,default,0),new(true,true,true,true,0,0,0));

@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ApexTrace.Core\ApexTrace.Core.csproj" />
+    <ProjectReference Include="..\ApexTrace.Recording\ApexTrace.Recording.csproj" />
+    <ProjectReference Include="..\ApexTrace.Track\ApexTrace.Track.csproj" />
   </ItemGroup>
 
   <ItemGroup>

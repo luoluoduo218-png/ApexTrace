@@ -13,9 +13,9 @@
             </Border>
             <TextBlock Text="会话名称将使用赛道与记录时间自动生成。" Style="{StaticResource LabelStyle}" Margin="0,0,0,22"/>
             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="10"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <Button Content="放弃记录" Click="Discard_Click" Style="{StaticResource DangerButtonStyle}"/>
-                <Button Grid.Column="2" Content="导出文件" Command="{Binding ExportDefaultCommand}" Style="{StaticResource BaseButtonStyle}"/>
-                <Button Grid.Column="4" Content="保存到记录库" Command="{Binding SaveSessionCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                <Button Content="放弃记录" Command="{Binding DiscardCommand}" Focusable="False" Style="{StaticResource DangerButtonStyle}"/>
+                <Button Grid.Column="2" Content="导出文件" Command="{Binding ExportDefaultCommand}" Focusable="False" Style="{StaticResource BaseButtonStyle}"/>
+                <Button Grid.Column="4" Content="保存到记录库" Command="{Binding SaveSessionCommand}" Focusable="False" Style="{StaticResource PrimaryButtonStyle}"/>
             </Grid>
         </StackPanel>
     </Border>

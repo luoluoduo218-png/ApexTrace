@@ -13,6 +13,8 @@ public sealed record RecorderCheckpoint(
     string State,
     string HeaderHash);
 
+public sealed record RecoveredRecording(SessionMetadata Metadata, IReadOnlyList<TelemetrySample> Samples, int SkippedLines);
+
 public sealed class SessionRecorder : IAsyncDisposable
 {
     private readonly Channel<TelemetrySample> _channel = Channel.CreateBounded<TelemetrySample>(new BoundedChannelOptions(32_768)
@@ -68,7 +70,15 @@ public sealed class SessionRecorder : IAsyncDisposable
         }
 
         Interlocked.Increment(ref _queueDepth);
-        await _channel.Writer.WriteAsync(sample, cancellationToken);
+        try
+        {
+            await _channel.Writer.WriteAsync(sample, cancellationToken);
+        }
+        catch
+        {
+            Interlocked.Decrement(ref _queueDepth);
+            throw;
+        }
     }
 
     public async Task FinishAsync(CancellationToken cancellationToken = default)
@@ -106,6 +116,57 @@ public sealed class SessionRecorder : IAsyncDisposable
             .Where(directory => File.Exists(Path.Combine(directory, "manifest.partial.json")))
             .OrderByDescending(Directory.GetLastWriteTimeUtc)
             .ToArray();
+    }
+
+    public static Task<RecoveredRecording> RecoverAsync(string sessionDirectory, CancellationToken cancellationToken = default) =>
+        Task.Run(() => Recover(sessionDirectory, cancellationToken), cancellationToken);
+
+    private static RecoveredRecording Recover(string sessionDirectory, CancellationToken cancellationToken)
+    {
+        var manifestPath = Path.Combine(sessionDirectory, "manifest.partial.json");
+        var samplesPath = Path.Combine(sessionDirectory, "samples.ndjson");
+        if (!File.Exists(manifestPath) || !File.Exists(samplesPath))
+            throw new InvalidDataException("临时记录缺少 manifest.partial.json 或 samples.ndjson。");
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var manifest = JsonSerializer.Deserialize<PartialManifest>(File.ReadAllText(manifestPath), options)
+            ?? throw new InvalidDataException("临时记录 manifest 无法解析。");
+        var samples = new List<TelemetrySample>();
+        var skipped = 0;
+        foreach (var line in File.ReadLines(samplesPath))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            try
+            {
+                var sample = JsonSerializer.Deserialize<TelemetrySample>(line, options);
+                if (sample is not null) samples.Add(sample); else skipped++;
+            }
+            catch (JsonException)
+            {
+                skipped++; // An abrupt exit can leave only the final NDJSON line incomplete.
+            }
+        }
+        if (samples.Count == 0) throw new InvalidDataException("临时记录中没有可恢复的完整遥测样本。");
+
+        var metadata = new SessionMetadata(
+            1,
+            manifest.SessionId,
+            manifest.TrackName,
+            manifest.TrackName,
+            manifest.VehicleName,
+            string.Empty,
+            "Recovered live session",
+            manifest.StartedAtUtc,
+            samples[^1].CapturedAtUtc,
+            TelemetryDataSource.LmuSharedMemory,
+            Path.GetFullPath(sessionDirectory),
+            null,
+            manifest.HeaderHash,
+            false,
+            $"从中断的临时记录恢复 {samples.Count:N0} 个样本；跳过 {skipped} 个不完整行。",
+            null);
+        return new RecoveredRecording(metadata, samples, skipped);
     }
 
     private async Task WriteLoopAsync(CancellationToken cancellationToken)
@@ -148,4 +209,14 @@ public sealed class SessionRecorder : IAsyncDisposable
 
         _cts.Dispose();
     }
+
+    private sealed record PartialManifest(
+        int SchemaVersion,
+        Guid SessionId,
+        string TrackName,
+        string VehicleName,
+        DateTimeOffset StartedAtUtc,
+        TelemetryDataSource DataSource,
+        string HeaderHash,
+        string State);
 }

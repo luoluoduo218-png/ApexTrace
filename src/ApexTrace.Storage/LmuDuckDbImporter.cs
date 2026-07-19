@@ -1,6 +1,9 @@
 using System.Data.Common;
 using System.Globalization;
+using System.Text.Json;
 using ApexTrace.Core;
+using ApexTrace.Recording;
+using ApexTrace.Track;
 using DuckDB.NET.Data;
 
 namespace ApexTrace.Storage;
@@ -43,6 +46,7 @@ public sealed class LmuDuckDbImporter
         var longitudinalG = ReadDoubles(connection, "G Force Long", "value");
         var ambient = ReadDoubles(connection, "Ambient Temperature", "value");
         var trackTemperature = ReadDoubles(connection, "Track Temperature", "value");
+        var ersCharge = TryReadDoubles(connection, "SoC", "value");
         var windSpeed = ReadDoubles(connection, "Wind Speed", "value");
         var windHeading = ReadDoubles(connection, "Wind Heading", "value");
         var tirePressure = ReadFourColumns(connection, "TyresPressure");
@@ -66,6 +70,12 @@ public sealed class LmuDuckDbImporter
         var tcCut = ReadEvents<byte>(connection, "TCCut", value => Convert.ToByte(value, CultureInfo.InvariantCulture));
         var brakeBias = ReadEvents<double>(connection, "Brake Bias Rear", value => Convert.ToDouble(value, CultureInfo.InvariantCulture));
         var wetness = ReadEvents<double>(connection, "Minimum Path Wetness", value => Convert.ToDouble(value, CultureInfo.InvariantCulture));
+        var cloudDarkness = TryReadEvents<bool>(connection, "CloudDarkness", value => Convert.ToBoolean(value, CultureInfo.InvariantCulture));
+        var sectors = TryReadEvents<int>(connection, "Current Sector", value =>
+        {
+            var nativeSector = Convert.ToInt32(value, CultureInfo.InvariantCulture);
+            return nativeSector is >= 1 and <= 3 ? nativeSector - 1 : nativeSector;
+        });
 
         var startedAtUtc = ParseRecordingTime(metadata.GetValueOrDefault("RecordingTime"));
         var originLatitude = latitude.FirstOrDefault();
@@ -82,6 +92,8 @@ public sealed class LmuDuckDbImporter
         var tcCutCursor = 0;
         var brakeBiasCursor = 0;
         var wetnessCursor = 0;
+        var cloudDarknessCursor = 0;
+        var sectorCursor = 0;
 
         var currentLap = laps.Count > 0 ? laps[0].Value : 0;
         var currentGear = gears.Count > 0 ? gears[0].Value : 0;
@@ -93,6 +105,11 @@ public sealed class LmuDuckDbImporter
         byte currentTcCut = tcCut.Count > 0 ? tcCut[0].Value : (byte)0;
         var currentBrakeBias = brakeBias.Count > 0 ? brakeBias[0].Value : 0;
         var currentWetness = wetness.Count > 0 ? wetness[0].Value : 0;
+        var currentCloudDarkness = cloudDarkness.Count > 0 && cloudDarkness[0].Value;
+        var currentSector = sectors.Count > 0 ? sectors[0].Value : -1;
+        var hasErs = ersCharge.Any(value => double.IsFinite(value) && value > 0.001);
+        var steeringWheelRange = ParseSteeringWheelRange(metadata.GetValueOrDefault("CarSetup"));
+        var (frontTireCompound, rearTireCompound) = ParseTireCompounds(metadata.GetValueOrDefault("CarSetup"));
 
         for (var index = 0; index < times.Length; index++)
         {
@@ -108,6 +125,8 @@ public sealed class LmuDuckDbImporter
             currentTcCut = Advance(tcCut, time, ref tcCutCursor, currentTcCut);
             currentBrakeBias = Advance(brakeBias, time, ref brakeBiasCursor, currentBrakeBias);
             currentWetness = Advance(wetness, time, ref wetnessCursor, currentWetness);
+            currentCloudDarkness = Advance(cloudDarkness, time, ref cloudDarknessCursor, currentCloudDarkness);
+            currentSector = Advance(sectors, time, ref sectorCursor, currentSector);
 
             var lat = Sample(latitude, index, times.Length);
             var lon = Sample(longitude, index, times.Length);
@@ -169,24 +188,25 @@ public sealed class LmuDuckDbImporter
                 new EnvironmentSample(
                     Sample(ambient, index, times.Length),
                     Sample(trackTemperature, index, times.Length),
-                    0,
+                    -1,
                     Clamp01(currentWetness),
                     new Vector3D(Math.Cos(heading) * wind, 0, Math.Sin(heading) * wind),
-                    0),
+                    0,
+                    currentCloudDarkness ? 1 : 0),
                 new SampleQuality(true, true, true, latitude.Length > 0 && longitude.Length > 0, index + 1, 0, 0,
-                    "Imported read-only from LMU native DuckDB; channels aligned by declared sample frequency.")));
+                    "Imported read-only from LMU native DuckDB; channels aligned by declared sample frequency."),
+                currentSector is >= 0 and <= 2 ? currentSector : -1,
+                frontTireCompound,
+                rearTireCompound,
+                steeringWheelRange,
+                hasErs ? Clamp01(Sample(ersCharge, index, times.Length) / 100.0) : -1,
+                hasErs ? (byte)1 : (byte)0));
         }
 
-        var completeLaps = BuildLapRecords(samples);
+        var completeLaps = TelemetryLapBuilder.Build(samples);
         var hasCompleteLap = completeLaps.Any(lap => lap.IsComplete);
         var trackName = metadata.GetValueOrDefault("TrackName") ?? "Unknown track";
-        var trackPoints = samples
-            .Where((_, index) => index % 10 == 0)
-            .GroupBy(sample => Math.Round(sample.LapDistanceMeters, 1))
-            .Select(group => group.First())
-            .OrderBy(sample => sample.LapDistanceMeters)
-            .Select(sample => new TrackPoint(sample.LapDistanceMeters, sample.WorldPosition.X, -sample.WorldPosition.Z))
-            .ToArray();
+        var track = GpsTrackReconstructor.FromSamples(trackName, samples, hasCompleteLap);
         var diagnostic = hasCompleteLap
             ? "LMU native DuckDB contains at least one completed lap."
             : "LMU 官方 DuckDB 仅包含一段非完整记录；未检测到完整圈，因此暂不生成分圈分析与建议。";
@@ -207,16 +227,15 @@ public sealed class LmuDuckDbImporter
             null,
             hasCompleteLap,
             diagnostic,
-            metadata.GetValueOrDefault("CarSetup"));
+            metadata.GetValueOrDefault("CarSetup"),
+            metadata.GetValueOrDefault("WeatherConditions") ?? string.Empty);
 
         return new TelemetrySession(
             1,
             sessionMetadata,
             samples,
             completeLaps,
-            new TrackDefinition(1, trackName, "runtime", TrackGeometrySource.RuntimeReconstructionPartial,
-                null, string.Empty, trackPoints,
-                "官方 Spa MAS 内容受保护，未尝试解密；轨迹来自本次官方 DuckDB GPS 数据。"),
+            track,
             [],
             []);
     }
@@ -247,6 +266,18 @@ public sealed class LmuDuckDbImporter
         }
 
         return result.ToArray();
+    }
+
+    private static double[] TryReadDoubles(DuckDBConnection connection, string table, string column)
+    {
+        try
+        {
+            return ReadDoubles(connection, table, column);
+        }
+        catch (DbException)
+        {
+            return [];
+        }
     }
 
     private static double[][] ReadFourColumns(DuckDBConnection connection, string table)
@@ -280,6 +311,18 @@ public sealed class LmuDuckDbImporter
         return result;
     }
 
+    private static List<TimedValue<T>> TryReadEvents<T>(DuckDBConnection connection, string table, Func<object, T> convert)
+    {
+        try
+        {
+            return ReadEvents(connection, table, convert);
+        }
+        catch (DbException)
+        {
+            return [];
+        }
+    }
+
     private static T Advance<T>(IReadOnlyList<TimedValue<T>> events, double time, ref int cursor, T current)
     {
         while (cursor < events.Count && events[cursor].Time <= time + 0.00001)
@@ -303,42 +346,60 @@ public sealed class LmuDuckDbImporter
         return double.IsFinite(value) ? value : 0;
     }
 
-    private static IReadOnlyList<LapRecord> BuildLapRecords(IReadOnlyList<TelemetrySample> samples)
-    {
-        if (samples.Count == 0)
-        {
-            return [];
-        }
-
-        var records = new List<LapRecord>();
-        var start = 0;
-        for (var index = 1; index < samples.Count; index++)
-        {
-            if (samples[index].LapNumber == samples[start].LapNumber)
-            {
-                continue;
-            }
-
-            records.Add(CreateLap(samples, start, index - 1, true));
-            start = index;
-        }
-
-        records.Add(CreateLap(samples, start, samples.Count - 1, false));
-        return records;
-    }
-
-    private static LapRecord CreateLap(IReadOnlyList<TelemetrySample> samples, int start, int end, bool complete)
-    {
-        var duration = samples[end].SessionElapsedSeconds - samples[start].SessionElapsedSeconds;
-        return new LapRecord(1, samples[start].LapNumber, samples[start].SessionElapsedSeconds,
-            samples[end].SessionElapsedSeconds, duration, complete, complete, end - start + 1);
-    }
-
     private static DateTimeOffset ParseRecordingTime(string? value) =>
         DateTimeOffset.TryParseExact(value, "yyyy-MM-dd'T'HH_mm_ss'Z'", CultureInfo.InvariantCulture,
             DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
             ? parsed
             : DateTimeOffset.UtcNow;
+
+    private static double ParseSteeringWheelRange(string? setupJson)
+    {
+        if (string.IsNullOrWhiteSpace(setupJson)) return 1080;
+        try
+        {
+            using var document = JsonDocument.Parse(setupJson);
+            if (!document.RootElement.TryGetProperty("VM_STEER_LOCK", out var setting)
+                || !setting.TryGetProperty("stringValue", out var value)) return 1080;
+            var text = value.GetString();
+            if (string.IsNullOrWhiteSpace(text)) return 1080;
+            var number = new string(text.TakeWhile(character => char.IsDigit(character) || character is '.' or ',').ToArray());
+            return double.TryParse(number.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var range)
+                && range is >= 180 and <= 1440 ? range : 1080;
+        }
+        catch (JsonException)
+        {
+            return 1080;
+        }
+    }
+
+    private static (string Front, string Rear) ParseTireCompounds(string? setupJson)
+    {
+        if (string.IsNullOrWhiteSpace(setupJson)) return (string.Empty, string.Empty);
+        try
+        {
+            using var document = JsonDocument.Parse(setupJson);
+            var front = ReadSetupString(document.RootElement, "VM_FRONT_TIRE_COMPOUND", "WM_COMPOUND-W_FL");
+            var rear = ReadSetupString(document.RootElement, "VM_REAR_TIRE_COMPOUND", "WM_COMPOUND-W_RL");
+            return (front, rear);
+        }
+        catch (JsonException)
+        {
+            return (string.Empty, string.Empty);
+        }
+    }
+
+    private static string ReadSetupString(JsonElement root, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            if (root.TryGetProperty(key, out var setting) && setting.TryGetProperty("stringValue", out var value))
+            {
+                var text = value.GetString();
+                if (!string.IsNullOrWhiteSpace(text)) return text.Trim();
+            }
+        }
+        return string.Empty;
+    }
 
     private static Vector3D ProjectGps(double latitude, double longitude, double originLatitude, double originLongitude)
     {

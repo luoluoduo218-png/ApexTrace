@@ -606,6 +606,8 @@
         "type": "Project",
         "dependencies": {
           "ApexTrace.Core": "[1.0.0, )",
+          "ApexTrace.Recording": "[1.0.0, )",
+          "ApexTrace.Track": "[1.0.0, )",
           "DuckDB.NET.Data.Full": "[1.5.3, )",
           "Parquet.Net": "[6.0.3, )"
         }

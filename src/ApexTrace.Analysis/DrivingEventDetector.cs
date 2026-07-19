@@ -22,7 +22,7 @@ public sealed class DrivingEventDetector
         {
             var previous = samples[index - 1];
             var current = samples[index];
-            if (current.LapNumber != previous.LapNumber)
+            if (current.LapNumber == previous.LapNumber + 1)
             {
                 events.Add(Create(current, DrivingEventType.LapStarted, current.LapNumber, "LMU lap number changed"));
                 events.Add(Create(previous, DrivingEventType.LapCompleted, previous.LapNumber, "Consecutive lap samples confirmed"));

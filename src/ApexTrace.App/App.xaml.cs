@@ -23,6 +23,11 @@ public partial class App : Application
             .Enrich.FromLogContext()
             .WriteTo.File(Path.Combine(appRoot, "Logs", "apextrace-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
             .CreateLogger();
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Log.Fatal(args.Exception, "Unhandled UI exception");
+            Log.CloseAndFlush();
+        };
 
         _host = Host.CreateDefaultBuilder()
             .UseSerilog()
@@ -33,6 +38,8 @@ public partial class App : Application
                 services.AddSingleton<ApexTracePackageService>();
                 services.AddSingleton<DrivingEventDetector>();
                 services.AddSingleton<EvidenceRecommendationEngine>();
+                services.AddSingleton<SessionAnalysisEngine>();
+                services.AddSingleton(new AppPreferencesStore(Path.Combine(appRoot, "settings.json")));
                 services.AddSingleton(sp => new LocalSessionRepository(Path.Combine(appRoot, "Sessions")));
                 services.AddSingleton<MainViewModel>();
                 services.AddSingleton<MainWindow>();

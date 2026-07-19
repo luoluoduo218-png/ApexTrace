@@ -1,0 +1,101 @@
+<UserControl x:Class="ApexTrace.App.Pages.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Border Style="{StaticResource CardStyle}">
+            <StackPanel>
+                <TextBlock Text="设置" Style="{StaticResource PageTitleStyle}"/>
+                <Button Content="游戏连接" Tag="Connection" Click="SettingsSection_OnClick" Style="{StaticResource NavButtonStyle}"/>
+                <Button Content="界面显示" Tag="Display" Click="SettingsSection_OnClick" Style="{StaticResource NavButtonStyle}"/>
+                <Button Content="数据与存储" Tag="Storage" Click="SettingsSection_OnClick" Style="{StaticResource NavButtonStyle}"/>
+                <Button Content="关于 ApexTrace" Tag="About" Click="SettingsSection_OnClick" Style="{StaticResource NavButtonStyle}"/>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsConnectionSettingsVisible, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <TextBlock Text="游戏连接" Style="{StaticResource PageTitleStyle}"/>
+                <TextBlock Text="只读使用 Le Mans Ultimate 官方 LMU_Data 共享内存与可访问遥测文件。" Style="{StaticResource LabelStyle}" Margin="0,0,0,18"/>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="190"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <StackPanel><TextBlock Text="连接状态" Style="{StaticResource LabelStyle}"/><TextBlock Text="{Binding ConnectionText}" FontSize="18" Foreground="{StaticResource SuccessGreenBrush}" Margin="0,8,0,0"/></StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="安装目录" Style="{StaticResource LabelStyle}"/>
+                            <Grid Margin="0,8,0,14">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding Connection.InstallationPath, Mode=OneWay}" IsReadOnly="True" VerticalContentAlignment="Center" Padding="10,8" Style="{StaticResource DarkTextBoxStyle}"/>
+                                <Button Grid.Column="1" Content="选择目录…" Click="SelectInstallationFolder_OnClick" Style="{StaticResource PrimaryButtonStyle}" Margin="10,0,0,0"/>
+                            </Grid>
+                            <TextBlock Text="{Binding Connection.Diagnostic}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="官方遥测文件" FontSize="18" FontWeight="SemiBold"/><TextBlock Text="游戏未运行时，可导入 LMU 官方写出的 DuckDB 文件用于回放和分析。" Style="{StaticResource LabelStyle}" Margin="0,7,0,0"/></StackPanel><Button Grid.Column="1" Content="重新扫描并导入" Command="{Binding ImportLatestCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="20,0,0,0"/></Grid></Border>
+                <Border Style="{StaticResource CardStyle}"><StackPanel><TextBlock Text="安全边界" FontSize="18" FontWeight="SemiBold"/><TextBlock Margin="0,12,0,0" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Text="ApexTrace 不注入游戏进程、不写入共享内存，也不修改游戏调教。赛道形状缺失时仅由合法遥测轨迹重建。"/></StackPanel></Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsDisplaySettingsVisible, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <TextBlock Text="界面显示" Style="{StaticResource PageTitleStyle}"/>
+                <TextBlock Text="显示偏好会自动保存，并应用到实时采集和单圈回放；双圈对比固定使用经典对比样式。" Style="{StaticResource LabelStyle}" Margin="0,0,0,18"/>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="语言" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="选择应用界面语言。设置会自动保存，并立即生效。" Style="{StaticResource LabelStyle}" Margin="0,8,24,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}"
+                                  DisplayMemberPath="DisplayName" SelectedValuePath="LanguageCode"
+                                  SelectedValue="{Binding SelectedLanguage, Mode=TwoWay}"
+                                  Style="{StaticResource DarkComboBoxStyle}" Width="180"/>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="油门 / 刹车显示" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="选择独立开度条，或使用随播放时间滚动的油门与刹车开合度曲线。双圈对比始终保留原有显示。" Style="{StaticResource LabelStyle}" Margin="0,8,24,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Background="#07121D" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="24" Padding="3">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Content="经典开度条" GroupName="PedalDisplayMode" Style="{StaticResource CapsuleRadioButtonStyle}" IsChecked="{Binding IsClassicPedalDisplay, Mode=TwoWay}"/>
+                                <RadioButton Content="坐标曲线" GroupName="PedalDisplayMode" Style="{StaticResource CapsuleRadioButtonStyle}" IsChecked="{Binding IsAxisPedalDisplay, Mode=TwoWay}"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+                <UniformGrid Columns="2">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,7,0">
+                        <StackPanel><TextBlock Text="经典开度条" FontWeight="SemiBold"/><TextBlock Text="延续当前界面：油门、刹车各自显示即时百分比与开度条。" Style="{StaticResource LabelStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/></StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}" Margin="7,0,0,0">
+                        <StackPanel><TextBlock Text="坐标曲线" FontWeight="SemiBold"/><TextBlock Text="绿色油门与红色刹车共享 0–100% 纵轴；当前点固定在横轴最右端，已播放曲线随时间向左滚动。" Style="{StaticResource LabelStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/></StackPanel>
+                    </Border>
+                </UniformGrid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsStorageSettingsVisible, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <TextBlock Text="数据与存储" Style="{StaticResource PageTitleStyle}"/>
+                <TextBlock Text="本地记录以可校验的 .apextrace 包保存；删除操作会先确认并移到 Windows 回收站。" Style="{StaticResource LabelStyle}" Margin="0,0,0,18"/>
+                <UniformGrid Columns="2" Margin="0,0,0,14"><Border Style="{StaticResource CardStyle}" Margin="0,0,8,0"><StackPanel><TextBlock Text="已保存记录" Style="{StaticResource LabelStyle}"/><TextBlock Text="{Binding StoredSessionCount}" FontSize="34" Margin="0,12,0,0"/></StackPanel></Border><Border Style="{StaticResource CardStyle}" Margin="8,0,0,0"><StackPanel><TextBlock Text="占用空间" Style="{StaticResource LabelStyle}"/><TextBlock Text="{Binding StorageSizeText}" FontSize="34" Margin="0,12,0,0"/></StackPanel></Border></UniformGrid>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="记录库位置" FontSize="18" FontWeight="SemiBold"/><TextBlock Text="{Binding StoragePath}" Foreground="{StaticResource BlueHighlightBrush}" Margin="0,10,0,0" TextWrapping="Wrap"/><TextBlock Text="包含会话、分圈、原始遥测、分析结果和校验和。" Style="{StaticResource LabelStyle}" Margin="0,10,0,0"/></StackPanel><Button Grid.Column="1" Content="在资源管理器中打开" Command="{Binding OpenStorageFolderCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="20,0,0,0"/></Grid></Border>
+                <Border Style="{StaticResource CardStyle}"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="260"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid><TextBlock Text="管理本地记录" FontSize="18" FontWeight="SemiBold"/><Button Content="刷新" Command="{Binding RefreshLibraryCommand}" Style="{StaticResource BaseButtonStyle}" HorizontalAlignment="Right" Padding="14,7"/></Grid><DataGrid Grid.Row="1" ItemsSource="{Binding StoredSessions}" SelectedItem="{Binding SelectedStoredSession, Mode=TwoWay}" Margin="0,12"><DataGrid.Columns><DataGridTextColumn Header="日期" Binding="{Binding Metadata.StartedAtUtc, StringFormat=yyyy-MM-dd HH:mm}" Width="*"/><DataGridTextColumn Header="赛道" Binding="{Binding Metadata.TrackName}" Width="1.5*"/><DataGridTextColumn Header="完整圈" Binding="{Binding CompleteLapCount}" Width="0.6*"/><DataGridTextColumn Header="样本" Binding="{Binding SampleCount, StringFormat={}{0:N0}}" Width="0.8*"/></DataGrid.Columns></DataGrid><StackPanel Grid.Row="2" Orientation="Horizontal"><Button Content="打开分析" Command="{Binding OpenSelectedSessionCommand}" Style="{StaticResource PrimaryButtonStyle}"/><Button Content="导出副本" Command="{Binding ExportSelectedSessionCommand}" Style="{StaticResource BaseButtonStyle}" Margin="10,0,0,0"/><Button Content="移到回收站" Command="{Binding DeleteSelectedSessionCommand}" Style="{StaticResource DangerButtonStyle}" Margin="10,0,0,0"/></StackPanel></Grid></Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsAboutSettingsVisible, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <TextBlock Text="关于 ApexTrace" Style="{StaticResource PageTitleStyle}"/>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14"><StackPanel><TextBlock Text="ApexTrace" FontSize="32" FontWeight="Bold" Foreground="{StaticResource BlueHighlightBrush}"/><TextBlock Text="{Binding AppVersionText, StringFormat=版本 {0}}" FontSize="18" Margin="0,10,0,0"/><TextBlock Text="Le Mans Ultimate 只读遥测记录、回放与驾驶分析工具" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,14,0,0"/></StackPanel></Border>
+                <Border Style="{StaticResource CardStyle}"><StackPanel><TextBlock Text="数据原则" FontSize="18" FontWeight="SemiBold"/><TextBlock Text="所有分析都来自用户主动记录或导入的 LMU 数据。完整圈不足时会明确降级；调教建议仅提供可验证的单变量实验，不会自动修改游戏。" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,12,0,0"/><TextBlock Text="运行平台：Windows · .NET 10 · WPF" Margin="0,18,0,0"/><TextBlock Text="许可证与第三方声明：应用目录 THIRD_PARTY_NOTICES.md" Style="{StaticResource LabelStyle}" Margin="0,8,0,0"/></StackPanel></Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

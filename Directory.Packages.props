@@ -1,0 +1,4 @@
+<Project>
+  <!-- Package versions are deliberately pinned in project files for the first runnable build.
+       This file is retained as the migration point for central package management. -->
+</Project>
